@@ -45,4 +45,5 @@ class RadioNetBackend(pykka.ThreadingActor, backend.Backend):
             self.radionet.get_top_stations()
             self.radionet.get_local_stations()
             self.radionet.get_favorites()
+            self.radionet.get_genres()
             self.set_update_timeout()
