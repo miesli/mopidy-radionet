@@ -119,7 +119,7 @@ class RadioNetClient(object):
 
         response = self.do_get(api_suffix, url_params)
 
-        if response.status_code is not 200:
+        if response.status_code != 200:
             logger.error('Radio.net: Error on get station by id ' +
                          str(station_id) + ". Error: " + response.text)
             return False
@@ -143,6 +143,27 @@ class RadioNetClient(object):
 
             return station
 
+    def get_station_by_name(self, station_name):
+        api_suffix = '/search/stationsonly'
+        url_params = {
+            'apikey': self.api_key,
+            '_': self.current_milli_time(),
+            'query': station_name,
+            'pageindex': 1,
+        }
+
+        response = self.do_post(api_suffix, url_params)
+
+        if response.status_code != 200:
+            logger.error('Radio.net: Search error ' + response.text)
+        else:
+            logger.debug('Radio.net: Done search')
+            json = response.json()
+
+            # take only the first match!
+            return self.get_station_by_id(json['categories'][0]['matches'][0]['id'])
+
+
     def get_local_stations(self):
         self.local_stations = []
 
@@ -157,7 +178,7 @@ class RadioNetClient(object):
 
         response = self.do_post(api_suffix, url_params)
 
-        if response.status_code is not 200:
+        if response.status_code != 200:
             logger.error('Radio.net: Get local stations error. ' +
                          response.text)
         else:
@@ -189,7 +210,7 @@ class RadioNetClient(object):
 
             response = self.do_post(api_suffix, url_params)
 
-            if response.status_code is not 200:
+            if response.status_code != 200:
                 logger.error('Radio.net: Search error ' + response.text)
             else:
                 logger.debug('Radio.net: Done search')
@@ -216,7 +237,7 @@ class RadioNetClient(object):
 
         response = self.do_post(api_suffix, url_params)
 
-        if response.status_code is not 200:
+        if response.status_code != 200:
             logger.error('Radio.net: Get top stations error. ' + response.text)
         else:
             logger.debug('Radio.net: Done get top stations list')
@@ -244,7 +265,7 @@ class RadioNetClient(object):
 
         response = self.do_post(api_suffix, url_params)
 
-        if response.status_code is not 200:
+        if response.status_code != 200:
             logger.error('Radio.net: Search error ' + response.text)
         else:
             logger.debug('Radio.net: Done search')

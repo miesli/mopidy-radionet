@@ -20,10 +20,10 @@ class RadioNetLibraryProvider(backend.LibraryProvider):
         if not uri.startswith('radionet:'):
             return None
 
-        variant, identifier = self.parse_uri(uri)
+        uri_parts = self.parse_uri(uri)
 
-        if variant == 'station':
-            identifier = int(identifier)
+        if uri_parts[0] == 'station':
+            identifier = int(uri_parts[1])
             radio_data = self.backend.radionet.get_station_by_id(identifier)
 
             artist = Artist(name=radio_data.name)
@@ -42,6 +42,25 @@ class RadioNetLibraryProvider(backend.LibraryProvider):
                 comment=radio_data.description,
                 uri=radio_data.stream_url)
             return [track]
+        elif uri_parts[0] == 'station_play':
+            radio_data = self.backend.radionet.get_station_by_name(uri_parts[1])
+
+            artist = Artist(name=radio_data.name)
+
+            album = Album(
+                artists=[artist],
+                name=radio_data.description + ' / ' + radio_data.continent +
+                     ' / ' + radio_data.country + ' - ' + radio_data.city,
+                uri='radionet:station:%s' % (uri_parts[1]))
+
+            track = Track(
+                artists=[artist],
+                album=album,
+                name=radio_data.name,
+                genre=radio_data.genres,
+                comment=radio_data.description,
+                uri=radio_data.stream_url)
+            return [track]
 
         return []
 
@@ -50,8 +69,8 @@ class RadioNetLibraryProvider(backend.LibraryProvider):
 
         directories = []
         tracks = []
-        variant, identifier = self.parse_uri(uri)
-        if variant == 'root':
+        uri_parts = self.parse_uri(uri)
+        if uri_parts[0] == 'root':
             if self.backend.radionet.local_stations:
                 directories.append(
                     self.ref_directory(
@@ -68,14 +87,14 @@ class RadioNetLibraryProvider(backend.LibraryProvider):
                         "radionet:category:favorites", "Favorites")
                 )
             return directories
-        elif variant == 'category' and identifier:
-            if identifier == "localstations":
+        elif uri_parts[0] == 'category' and uri_parts[1]:
+            if uri_parts[1] == "localstations":
                 for station in self.backend.radionet.local_stations:
                     tracks.append(self.station_to_ref(station))
-            if identifier == "top100":
+            if uri_parts[1] == "top100":
                 for station in self.backend.radionet.top_stations:
                     tracks.append(self.station_to_ref(station))
-            if identifier == "favorites":
+            if uri_parts[1] == "favorites":
                 for station in self.backend.radionet.favorite_stations:
                     tracks.append(self.station_to_ref(station))
             tracks.sort(key=lambda ref: ref.name)
@@ -112,7 +131,8 @@ class RadioNetLibraryProvider(backend.LibraryProvider):
         return Ref.directory(uri=uri, name=name)
 
     def parse_uri(self, uri):
-        result = re.findall(r'^radionet:([a-z]+):?([a-z0-9]+|\d+)?$', uri)
-        if result:
-            return result[0]
-        return None, None
+        if not uri.startswith('radionet:'):
+            return []
+
+        uri = uri.replace('radionet:', '')
+        return uri.split(':')
